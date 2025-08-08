@@ -231,3 +231,37 @@ def sprints_cmd(boardname, name, show_all, my_issues, no_issues, json):
         click.echo(final_output)
     else:
         click.echo(JSON.dumps(json_sprints))
+
+
+@click.command('create-sprint')
+@click.argument('boardname')
+@click.option('--name', type=str, required=True,
+              help='Name of the sprint to create.')
+@click.option('--start-date', type=str, default=None,
+              help='Start date of the sprint (ISO format: YYYY-MM-DDTHH:MM:SS.sss+TZ).')
+@click.option('--end-date', type=str, default=None,
+              help='End date of the sprint (ISO format: YYYY-MM-DDTHH:MM:SS.sss+TZ).')
+@click.option('--goal', type=str, default=None,
+              help='Goal of the sprint.')
+def create_sprint_cmd(boardname, name, start_date, end_date, goal):
+    """
+    Creates a new sprint on the specified board
+    """
+    jobj = connector.JiraConnector()
+    jobj.login()
+
+    try:
+        sprint = jobj.create_sprint(boardname, name, start_date, end_date, goal)
+        click.echo(f"Sprint created successfully:")
+        click.echo(f"  ID: {sprint['id']}")
+        click.echo(f"  Name: {sprint['name']}")
+        click.echo(f"  State: {sprint['state']}")
+        click.echo(f"  Board ID: {sprint['originBoardId']}")
+        if 'startDate' in sprint:
+            click.echo(f"  Start Date: {sprint['startDate']}")
+        if 'endDate' in sprint:
+            click.echo(f"  End Date: {sprint['endDate']}")
+        if 'goal' in sprint:
+            click.echo(f"  Goal: {sprint['goal']}")
+    except Exception as e:
+        click.echo(f"Error creating sprint: {str(e)}", err=True)

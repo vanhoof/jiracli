@@ -1225,3 +1225,44 @@ class JiraConnector(object):
         )
         text = utils.md_to_jira(text)
         return text
+
+    def create_sprint(self, board, name, start_date=None, end_date=None, goal=None):
+        """Create a new sprint on the specified board."""
+        if self.jira is None:
+            raise RuntimeError("Need to log-in first.")
+
+        if isinstance(board, str):
+            board_name = board
+            board_list = self.fetch_board_by_name(board_name)
+            found = None
+            if len(board_list) != 1:
+                for b in board_list:
+                    if b.name == board_name:
+                        found = b
+            else:
+                found = board_list[0]
+
+            if not found:
+                raise ValueError(f"Invalid results for {board_name} - ambiguous?")
+            board = found
+
+        sprint_data = {
+            "name": name,
+            "originBoardId": board.raw['id']
+        }
+
+        if start_date:
+            sprint_data["startDate"] = start_date
+        if end_date:
+            sprint_data["endDate"] = end_date
+        if goal:
+            sprint_data["goal"] = goal
+
+        self._ratelimit()
+        url = f"{self.jira.server_url}/rest/agile/1.0/sprint"
+        response = self.jira._session.post(url, json=sprint_data)
+        
+        if response.status_code != 201:
+            raise JIRAError(f"Failed to create sprint: {response.status_code} - {response.text}")
+        
+        return response.json()
